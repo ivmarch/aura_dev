@@ -11,15 +11,28 @@ Shader Wrapper — Parameter Execute DAT callback
 import re
 
 
+def uniform_base_name(uname):
+    """Акуратно прибирає префікс u у стилі GLSL (uTime, u_color)."""
+    if not uname:
+        return ''
+    if uname.startswith('u') and len(uname) > 1 and (uname[1].isupper() or uname[1] == '_'):
+        return uname[1:]
+    return uname
+
+
 def sanitize_name(uname):
-    """TD: ім'я параметра має мати одну велику літеру спочатку, решта lowercase"""
-    name = uname.lstrip('u')
-    if name:
+    """TD: Uppercase first, then lowercase/digits only; no trailing digit."""
+    raw = uniform_base_name(uname)
+    # Прибираємо `_` та будь-які неалфанумеричні символи.
+    name = ''.join(re.findall(r'[A-Za-z0-9]+', raw))
+    if not name:
+        name = 'Param'
+    else:
         name = name[0].upper() + name[1:].lower()
-    if name and name[-1].isdigit():
-        name = name + 'p'
     if len(name) < 2:
         name = name + 'val'
+    if name[-1].isdigit():
+        name = name + 'p'
     return name
 
 
@@ -67,7 +80,7 @@ def onPulse(par):
             vectors.append({
                 'uname': uname,
                 'pname': sanitize_name(uname),
-                'label': uname.lstrip('u'),
+                'label': uniform_base_name(uname),
                 'idx':   i,
                 'vals':  (vx, vy, vz, vw)
             })
